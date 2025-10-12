@@ -1,9 +1,8 @@
-datasets
-pandas
-tqdm
-python-dotenv
-neo4j
 llama-index
 llama-index-llms-ollama
 llama-index-embeddings-ollama
-llama-index-vector-stores-neo4jvector
+llama-index-vector-stores-neo4j
+python-dotenv
+pandas
+tqdm
+requests

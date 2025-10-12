@@ -1,3 +1,11 @@
+neo4j/data/
+neo4j/logs/
+neo4j/import/
+neo4j/plugins/
+data/databases/
+data/transactions/
+data/embeddings/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
