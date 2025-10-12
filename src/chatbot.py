@@ -1,4 +1,3 @@
-# src/chatbot.py
 import streamlit as st
 from src.query_engine import build_query_engine
 
