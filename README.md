@@ -23,6 +23,7 @@
       <a href="#primeros-pasos">Primeros pasos</a>
       <ul>
         <li><a href="#requisitos-previos">Requisitos previos</a></li>
+        <li><a href="#obtener-la-api-key-de-groq">Obtener la API key de Groq</a></li>
         <li><a href="#instalación">Instalación</a></li>
       </ul>
     </li>
