@@ -5,12 +5,14 @@ numpy
 python-dotenv
 requests
 tqdm
+groq
 
 
 llama-index
 llama-index-graph-stores-neo4j
 llama-index-llms-ollama
 llama-index-embeddings-ollama
+llama-index-llms-groq
 
 typing-extensions
 pathlib

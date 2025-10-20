@@ -54,7 +54,7 @@ En este proyecto se integran varias tecnologías y herramientas destacadas para 
 - Framework web para crear la interfaz de usuario de forma sencilla.
 - Biblioteca para indexar datos y conectarlos con modelos de lenguaje (usada para gestionar el índice vectorial).
 - Base de datos de grafos utilizada como *vector store* para almacenar las representaciones vectoriales de las obras de arte.
-- Plataforma para ejecutar modelos de lenguaje grandes localmente (se utiliza para generar *embeddings* y respuestas con un modelo LLM local).
+- Plataforma para ejecutar modelos de lenguaje grandes en nube o local (se utiliza para generar *embeddings* y respuestas con un modelo LLM en nube o local).
 
 <p align="right">(<a href="#readme-top">volver arriba</a>)</p>
 
@@ -70,9 +70,10 @@ Asegúrate de tener instaladas las siguientes herramientas o software en tu sist
 - **Docker y Docker Compose** – Para ejecutar fácilmente la base de datos Neo4j en un contenedor.
 - **Neo4j** – Si prefieres instalar Neo4j directamente en lugar de usar Docker.
 - **Ollama** – Necesario para cargar y ejecutar los modelos de lenguaje localmente.
+- **Proveedor LLM** – GroqCloud (recomendado) u Ollama local.
 - **Bibliotecas Python** – Las dependencias Python se indican en `requirements.txt` (incluye llama-index, pandas, python-dotenv, etc.). Se recomienda instalarlas mediante pip una vez clonado el repositorio.
 
-> **Nota:** Ollama debe tener disponibles los modelos adecuados para este proyecto. Por defecto, en el archivo `.env` se especifica un modelo de *embeddings* (`mxbai-embed-large`) y un modelo de lenguaje (`llama3`). Asegúrate de descargarlos en Ollama (`ollama pull <nombre_del_modelo>`) o modifica `.env` para usar modelos que tengas disponibles. El modelo de *embeddings* **mxbai-embed-large** y un modelo LLM basado en Llama 2 son recomendados para resultados óptimos.
+> **Nota:** Ollama debe tener disponibles los modelos adecuados para este proyecto. Por defecto, en el archivo `.env` se especifica un modelo de *embeddings* (`mxbai-embed-large`). No es necesario descargar el modelo de `llama` ya que se usa la ejecución en nube a través de `Groq`. Si se usa LLM local ejecutar (`ollama pull <nombre_del_modelo>`). Se puede modificar `.env` para usar otros modelos disponibles. El modelo de *embeddings* **mxbai-embed-large** y un modelo LLM basado en Llama 2 son recomendados para resultados óptimos.
 
 ### Instalación
 
@@ -118,7 +119,7 @@ Sigue estos pasos para instalar y poner en marcha la aplicación:
     Una vez Neo4j esté en ejecución y configurado, puedes poblar la base de datos con los *embeddings* del dataset. Ejecuta el script:
 
     ```bash
-    python src/build_index.py
+    python -m src.build_index
     ```
 
     Este script leerá el fichero CSV (`data/processed/wikiart_clean.csv`) y creará documentos con sus descripciones. Luego generará *embeddings* para cada documento usando el modelo de *embeddings* de Ollama y los almacenará en Neo4j como vectores. Por defecto, se toma una muestra aleatoria de 2000 obras para indexar, con el fin de agilizar el proceso. Verás mensajes en la consola indicando el progreso.
@@ -127,7 +128,7 @@ Sigue estos pasos para instalar y poner en marcha la aplicación:
     Finalmente, inicia la interfaz de usuario basada en Streamlit con:
 
     ```bash
-    streamlit run src/chatbot.py
+    python -m streamlit run src/chatbot.py
     ```
 
     Esto abrirá (o podrás abrir manualmente) un navegador web apuntando a `http://localhost:8501`. Allí encontrarás una interfaz sencilla donde puedes introducir texto para obtener recomendaciones.
@@ -150,18 +151,17 @@ Cada respuesta variará según el texto proporcionado, ya que la IA formulará r
 
 Si encuentras un error o la respuesta tarda demasiado, revisa la consola donde lanzaste Streamlit para detectar posibles excepciones (por ejemplo, problemas de conexión con Neo4j u Ollama). Asegúrate de que tanto Neo4j como Ollama estén en ejecución y con los modelos cargados.
 
-> **Sugerencia:** Puedes modificar la cantidad de resultados similares (`similarity_top_k`) en el código si deseas que el motor considere más o menos obras al elaborar la recomendación (por defecto son 5). También es posible ajustar o traducir el mensaje *prompt* en `src/query_engine.py` si quisieras obtener respuestas en otro idioma o con otro estilo.
+> **Sugerencia:** Puedes modificar la cantidad de resultados similares (`similarity_top_k`) en el código si deseas que el motor considere más o menos obras al elaborar la recomendación (por defecto son 8). También es posible ajustar o traducir el mensaje *prompt* en `src/query_engine.py` si quisieras obtener respuestas en otro idioma o con otro estilo.
 
 <p align="right">(<a href="#readme-top">volver arriba</a>)</p>
 
 ## Hoja de ruta
 
-- Implementación básica del motor de recomendaciones (índice vectorial con Neo4j y consultas con LLM en español).
+- Implementación básica del motor de recomendaciones (índice vectorial con Neo4j y consultas).
 - Interfaz web simple con Streamlit para ingresar consultas y mostrar resultados.
 - Indexar la totalidad del dataset WikiArt (actualmente se usa una muestra de 2000 registros por cuestiones de rendimiento).
 - Permitir búsqueda inversa (por nombre de artista específico para recomendar estilos relacionados, si no se logra ya con la descripción libre).
 - Soporte para consultas multilingües (por ejemplo, entender entradas en inglés y responder acorde, además del español).
-- Incorporar visualización de imágenes de las obras o artistas sugeridos para enriquecer la experiencia de usuario.
 - Optimizar el rendimiento y uso de memoria (ej. eliminar necesidad de caché masivo al generar el CSV, cargar *embeddings* de forma más eficiente, etc.).
 
 Mira los [issues abiertos](https://github.com/maximberchun/ArtistRecomender/issues) para ver la lista completa de funciones propuestas y problemas conocidos pendientes.
@@ -205,6 +205,7 @@ Este proyecto no cuenta con una licencia específica. El código fuente se propo
 ## Contacto
 
 Maxim Berchun – @maximberchun – mberch00@estudiantes.unileon.es , maximberchun@hotmail.com
+
 Enlace del proyecto: https://github.com/maximberchun/ArtistRecomender <p align="right">(<a href="#readme-top">volver arriba</a>)</p>
 
 
@@ -218,8 +219,10 @@ Enlace del proyecto: https://github.com/maximberchun/ArtistRecomender <p align="
 
     Ollama – Proyecto de código abierto que hace posible ejecutar modelos de lenguaje de manera local de forma sencilla.
 
+    Groq (GroqCloud) – Plataforma de inferencia de baja latencia con API compatible con OpenAI y Llama, utilizada como proveedor LLM para generar respuestas de manera rápida y fiable.
+
     Mixedbread AI – Creadores del modelo de embeddings mxbai-embed-large, utilizado para representar las descripciones de las obras de arte en este proyecto.
 
     Streamlit Docs – Documentación oficial de Streamlit, que ayudó a construir rápidamente la interfaz web interactiva.
 
-<p align="right">(<a href="#readme-top">volver arriba</a>)</p> ```
+<p align="right">(<a href="#readme-top">volver arriba</a>)</p>
