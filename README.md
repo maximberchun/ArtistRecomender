@@ -75,6 +75,12 @@ Asegúrate de tener instaladas las siguientes herramientas o software en tu sist
 
 > **Nota:** Ollama debe tener disponibles los modelos adecuados para este proyecto. Por defecto, en el archivo `.env` se especifica un modelo de *embeddings* (`mxbai-embed-large`). No es necesario descargar el modelo de `llama` ya que se usa la ejecución en nube a través de `Groq`. Si se usa LLM local ejecutar (`ollama pull <nombre_del_modelo>`). Se puede modificar `.env` para usar otros modelos disponibles. El modelo de *embeddings* **mxbai-embed-large** y un modelo LLM basado en Llama 2 son recomendados para resultados óptimos.
 
+### Obtener la API key de Groq
+
+1. Crea una cuenta y ve a la consola de GroqCloud → **API Keys** (https://console.groq.com/keys).
+2. Pulsa **Create API Key**.
+3. Guárdala como variable de entorno o en un `.env` local (git-ignorado).
+
 ### Instalación
 
 Sigue estos pasos para instalar y poner en marcha la aplicación:
