@@ -1,44 +1,59 @@
-from datasets import load_dataset
+from datasets import load_dataset #type: ignore
 import pandas as pd
 from pathlib import Path
 
-# IMPORTANTE ANTES DE EJECUTAR
-# Este archivo tarda mucho en compilarse y almacena aprox 60 gb de cache
-# NO ES NECESARIO COMPILARLO salvo que necesita crear nuevo .csv
-
 def load_and_clean():
-    print("Descargando solo metadatos del dataset WikiArt...")
-    ds = load_dataset("huggan/wikiart", split="train")
+    print("Descargando metadatos del dataset WikiArt...")
 
-    # elimina la columna "image" porque ocupa demasiado
-    if "image" in ds.column_names:
-        ds = ds.remove_columns("image")
+    # Cargar solo los metadatos, sin descargar los archivos de imagen
+    ds_stream = load_dataset("huggan/wikiart", split="train", streaming=True)
 
-    style_names = ds.features["style"].names
-    genre_names = ds.features["genre"].names
-    artist_names = ds.features["artist"].names
+    # Convertir el stream en una lista limitada (para no consumir toda la memoria)
+    rows = []
+    max_rows = 20000  # puedes ajustar este valor (ej. 20000 si tu RAM lo permite)
+    for i, item in enumerate(ds_stream):
+        if i >= max_rows:
+            break
+        try:
+            url = item.get("image", {}).get("path") if isinstance(item.get("image"), dict) else None
+            if not url or not url.startswith("https"):
+                continue
+            artist = item.get("artist")
+            style = item.get("style")
+            genre = item.get("genre")
+            if None in (artist, style, genre):
+                continue
+            rows.append({
+                "artist": artist,
+                "style": style,
+                "genre": genre,
+                "title": "Untitled",
+                "url": url
+            })
+        except Exception:
+            continue
 
-    df = pd.DataFrame({
-        "artist": [artist_names[a] for a in ds["artist"]],
-        "style": [style_names[s] for s in ds["style"]],
-        "genre": [genre_names[g] for g in ds["genre"]],
-    })
-    
-    for col in ["artist", "style", "genre"]:
-        if col in df.columns:
-            df[col] = df[col].fillna("Unknown")
-        else:
-            df[col] = "Unknown"
-            
-    df["title"] = ("Untitled")
+    print(f"Filas cargadas: {len(rows)}")
+
+    df = pd.DataFrame(rows)
+
+    # Limpiar valores vacíos o duplicados
+    df = df.dropna(subset=["artist", "style", "genre", "url"])
+    df = df[df["url"].str.startswith("https")]
+    df = df.drop_duplicates(subset=["artist", "style", "genre", "url"], keep="first").reset_index(drop=True)
+
+    # Añadir campo 'text' para embeddings
     df["text"] = df.apply(
         lambda row: f"Artwork titled '{row['title']}'. Style: {row['style']}. Genre: {row['genre']}. Artist: {row['artist']}.",
-        axis=1,
+        axis=1
     )
 
-    Path("data/processed").mkdir(parents=True, exist_ok=True)
-    df[["artist", "style", "genre", "title", "text"]].to_csv("data/processed/wikiart_clean.csv", index=False)
-    print("Dataset limpio guardado en data/processed/wikiart_clean.csv")
+    output_path = Path("data/processed/wikiart_clean.csv")
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    df.to_csv(output_path, index=False)
+
+    print(f"Dataset limpio guardado en {output_path}")
+    print(f"Registros finales: {len(df)}")
 
 if __name__ == "__main__":
     load_and_clean()
