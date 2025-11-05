@@ -55,7 +55,7 @@ En este proyecto se integran varias tecnologías y herramientas destacadas para 
 - Framework web para crear la interfaz de usuario de forma sencilla.
 - Biblioteca para indexar datos y conectarlos con modelos de lenguaje (usada para gestionar el índice vectorial).
 - Base de datos de grafos utilizada como *vector store* para almacenar las representaciones vectoriales de las obras de arte.
-- Plataforma para ejecutar modelos de lenguaje grandes en nube o local (se utiliza para generar *embeddings* y respuestas con un modelo LLM en nube o local).
+- Plataforma para ejecutar modelos de lenguaje grandes en nube a través del provider Groq (se utiliza para generar *embeddings* y respuestas con un modelo LLM en nube).
 
 <p align="right">(<a href="#readme-top">volver arriba</a>)</p>
 
@@ -70,11 +70,11 @@ Asegúrate de tener instaladas las siguientes herramientas o software en tu sist
 - **Python 3.x** – Lenguaje principal en el que está implementado el proyecto.
 - **Docker y Docker Compose** – Para ejecutar fácilmente la base de datos Neo4j en un contenedor.
 - **Neo4j** – Si prefieres instalar Neo4j directamente en lugar de usar Docker.
-- **Ollama** – Necesario para cargar y ejecutar los modelos de lenguaje localmente.
-- **Proveedor LLM** – GroqCloud (recomendado) u Ollama local.
+- **Ollama** – Necesario para cargar y ejecutar los modelos de lenguaje.
+- **Proveedor LLM** – GroqCloud - el provider que permite ejecutar el modelo de Llama en nube a pesar de que la aplicación se ejecuta localmente.
 - **Bibliotecas Python** – Las dependencias Python se indican en `requirements.txt` (incluye llama-index, pandas, python-dotenv, etc.). Se recomienda instalarlas mediante pip una vez clonado el repositorio.
 
-> **Nota:** Ollama debe tener disponibles los modelos adecuados para este proyecto. Por defecto, en el archivo `.env` se especifica un modelo de *embeddings* (`mxbai-embed-large`). No es necesario descargar el modelo de `llama` ya que se usa la ejecución en nube a través de `Groq`. Si se usa LLM local ejecutar (`ollama pull <nombre_del_modelo>`). Se puede modificar `.env` para usar otros modelos disponibles. El modelo de *embeddings* **mxbai-embed-large** y un modelo LLM basado en Llama 2 son recomendados para resultados óptimos.
+> **Nota:** Ollama debe tener disponibles los modelos adecuados para este proyecto. Por defecto, en el archivo `.env` se especifica un modelo de *embeddings* (`mxbai-embed-large`). No es necesario descargar el modelo de `llama` ya que se usa la ejecución en nube a través de `Groq`. El modelo de *embeddings* **mxbai-embed-large** y un modelo LLM basado en Llama 2 son recomendados para resultados óptimos.
 
 ### Obtener la API key de Groq
 
@@ -100,6 +100,23 @@ Sigue estos pasos para instalar y poner en marcha la aplicación:
     ```
 
     Esto instalará las librerías necesarias, como LlamaIndex. Ten en cuenta que esto no incluye la descarga de los modelos de Ollama (ver nota arriba).
+
+2. **Prepara .env:**  
+Para el funcionamiento de la aplicación es necesario crear un .env en la ruta principal de la carpeta del proyecto y que tenga el siguiente contenido: 
+
+```bash
+LLM_PROVIDER=groq
+LLM_MODEL=llama-3.3-70b-versatile
+EMBED_MODEL=mxbai-embed-large
+
+NEO4J_URI=bolt://localhost:7687
+NEO4J_USER=neo4j
+NEO4J_PASSWORD=password
+
+# GROQ_API_KEY = tu_api_key_aqui (descomenta y agrega tu clave Groq)
+```
+
+Crea tu api key de Groq aqui: (https://console.groq.com/keys)
 
 3. **Descarga/Prepara el conjunto de datos (opcional):**  
     El proyecto usa el dataset **WikiArt** (metadatos de obras de arte) disponible en Hugging Face. Si lo deseas, puedes generar un nuevo CSV con los datos ejecutando el script:
@@ -224,7 +241,7 @@ Enlace del proyecto: https://github.com/maximberchun/ArtistRecomender <p align="
 
     Neo4j Community – Por la base de datos de grafos y su soporte para índices vectoriales, clave en la implementación eficiente de las búsquedas de similitud.
 
-    Ollama – Proyecto de código abierto que hace posible ejecutar modelos de lenguaje de manera local de forma sencilla.
+    Ollama – Proyecto de código abierto que hace posible ejecutar modelos de lenguaje de forma sencilla.
 
     Groq (GroqCloud) – Plataforma de inferencia de baja latencia con API compatible con OpenAI y Llama, utilizada como proveedor LLM para generar respuestas de manera rápida y fiable.
 
