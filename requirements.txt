@@ -6,6 +6,8 @@ python-dotenv
 requests
 tqdm
 groq
+selenium
+undetected-chromedriver
 
 
 llama-index
