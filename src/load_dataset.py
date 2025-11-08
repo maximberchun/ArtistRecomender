@@ -6,7 +6,6 @@ from tqdm import tqdm
 def load_and_clean():
     print("Cargando dataset WikiArt (modo normal)...")
 
-    # Carga con reutilización si ya existe en disco
     ds = load_dataset(
         "huggan/wikiart",
         split="train",
@@ -24,7 +23,6 @@ def load_and_clean():
 
     rows = []
 
-    # === Barra de progreso con total conocido ===
     for item in tqdm(ds, desc="Extrayendo metadatos", total=len(ds), unit="obra", dynamic_ncols=True):
         try:
             artist_idx = item.get("artist")
@@ -38,7 +36,6 @@ def load_and_clean():
             style = style_names[style_idx]
             genre = genre_names[genre_idx]
 
-            # Filtramos los "Unknown" directamente
             if any(x.startswith("Unknown") for x in (artist, style, genre)):
                 continue
 
@@ -56,7 +53,6 @@ def load_and_clean():
     print(f"\nFilas cargadas (antes de limpieza): {len(rows):,}")
     df = pd.DataFrame(rows)
 
-    # --- Limpieza extendida ---
     df = df.dropna(subset=["artist", "style", "genre"])
     invalid_values = {"Unknown", "Unknown Artist", "Unknown Genre", "Unknown Style"}
     df = df[~df["artist"].isin(invalid_values)]
@@ -64,13 +60,11 @@ def load_and_clean():
     df = df[~df["genre"].isin(invalid_values)]
     df = df.drop_duplicates(subset=["artist", "title", "style", "genre"], keep="first").reset_index(drop=True)
 
-    # Crear texto descriptivo
     df["text"] = df.apply(
         lambda r: f"Artwork titled '{r['title']}'. Style: {r['style']}. Genre: {r['genre']}. Artist: {r['artist']}.",
         axis=1
     )
 
-    # Guardar dataset limpio
     output_path = Path("data/processed/wikiart_metadata_clean.csv")
     output_path.parent.mkdir(parents=True, exist_ok=True)
     df.to_csv(output_path, index=False, encoding="utf-8")
@@ -78,7 +72,6 @@ def load_and_clean():
     print(f"\n Dataset limpio guardado en: {output_path}")
     print(f"Registros finales: {len(df):,}")
     print(df.head(10).to_string(index=False))
-
 
 if __name__ == "__main__":
     load_and_clean()
