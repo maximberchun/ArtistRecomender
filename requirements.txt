@@ -8,6 +8,7 @@ tqdm
 groq
 selenium
 undetected-chromedriver
+ddgs
 
 
 llama-index

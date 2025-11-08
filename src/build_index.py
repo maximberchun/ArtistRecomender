@@ -5,6 +5,7 @@ from llama_index.llms.ollama import Ollama
 from llama_index.vector_stores.neo4jvector import Neo4jVectorStore
 from llama_index.core import VectorStoreIndex, Document, StorageContext
 from src.config import *
+from pathlib import Path
 
 def build_index():
     print("Iniciando construcción del índice vectorial...")
@@ -36,19 +37,33 @@ def build_index():
         else:
             raise e
 
-    df = pd.read_csv("data/processed/wikiart_clean.csv").sample(2000, random_state=42)
+    csv_path = Path("data/processed/wikiart_metadata.csv")
+    if not csv_path.exists():
+        raise FileNotFoundError(f"No se encontró el archivo: {csv_path}")
 
-    docs = [
-        Document(
-            text=row["text"],
-            metadata={
-                "artist": row["artist"],
-                "style": row["style"],
-                "genre": row["genre"],
-            },
-        )
-        for _, row in tqdm(df.iterrows(), total=len(df))
-    ]
+    df = pd.read_csv(csv_path)
+
+    # Si el dataset tiene menos de 2000 filas, usa todas
+    df = df.sample(min(len(df), 2000), random_state=42)
+
+    docs = []
+    for _, row in tqdm(df.iterrows(), total=len(df), desc="Creando documentos"):
+        text = row.get("text", "")
+        if not isinstance(text, str) or not text.strip():
+            continue
+
+        # Añadimos metadatos enriquecidos
+        metadata = {
+            "artist": row.get("artist"),
+            "style": row.get("style"),
+            "genre": row.get("genre"),
+            "artist_wikiart_url": row.get("artist_wikiart_url"),
+            "image_url": row.get("image_url"),
+        }
+
+        docs.append(Document(text=text, metadata=metadata))
+
+    print(f"Total de documentos listos para indexar: {len(docs):,}")
 
     # Aquí aseguramos que LlamaIndex use Neo4j como destino
     storage_context = StorageContext.from_defaults(vector_store=vstore)
@@ -60,6 +75,7 @@ def build_index():
     )
 
     print("Embeddings generados e indexados correctamente en Neo4j.")
+    print(f"Índice: wikiart_idx  |  Documentos: {len(docs):,}")
 
 if __name__ == "__main__":
     build_index()
