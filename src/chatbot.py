@@ -1,15 +1,28 @@
+import os
 import re
 import unicodedata
-import os
 import time
-import requests
 from io import BytesIO
-from PIL import Image
-import streamlit as st
-from src.query_engine import build_query_engine
-import re
+from urllib.parse import urlparse
 
+import requests
+from PIL import Image, ImageFile
+import streamlit as st
+
+from src.query_engine import build_query_engine
+
+# ============ Límites de carga ============
+# Máximo tiempo por imagen (segundos). Puedes cambiarlo con IMG_TIMEOUT_S=1.2
+IMG_TIMEOUT_S = float(os.getenv("IMG_TIMEOUT_S", "1.2"))
+# Máximo tamaño descargado por imagen (KB). Puedes cambiarlo con MAX_IMG_KB=350
+MAX_IMG_BYTES = int(os.getenv("MAX_IMG_KB", "350")) * 1024
+
+# Permitir abrir imágenes incompletas si cortamos la descarga por tamaño/tiempo
+ImageFile.LOAD_TRUNCATED_IMAGES = True
+
+# Silenciar aviso de transformers
 os.environ["TRANSFORMERS_NO_ADVISORY_WARNINGS"] = "1"
+
 st.title("Recomendador de Artistas")
 
 @st.cache_resource
@@ -23,7 +36,8 @@ def pretty_name(name: str) -> str:
         return "Artista desconocido"
     s = name.replace("-", " ").strip()
     s = re.sub(r"\s+", " ", s).title()
-    for p in (" De ", " Del ", " La ", " Las ", " El ", " Los ", " Y ", " Van ", " Von ", " Da ", " Di "):
+    for p in (" De ", " Del ", " La ", " Las ", " El ", " Los ", " Y ",
+              " Van ", " Von ", " Da ", " Di "):
         s = s.replace(p, p.lower())
     return s
 
@@ -39,7 +53,6 @@ def clean_url(u: str | None) -> str | None:
     return u if u.lower().startswith(("http://", "https://")) else None
 
 def norm_key(s: str | None) -> str:
-    """Normaliza nombre para deduplicar: minúsculas, sin acentos, solo [a-z0-9-]."""
     if not s:
         return ""
     s = unicodedata.normalize("NFKD", s).encode("ascii", "ignore").decode("ascii")
@@ -47,57 +60,100 @@ def norm_key(s: str | None) -> str:
     s = re.sub(r"[^a-z0-9]+", "-", s).strip("-")
     return s
 
-STYLE_MAP = {
-    "renacimiento": "Renaissance",
-    "barroco": "Baroque",
-    "neoclasicismo": "Neoclassicism",
-    "rococo": "Rococo",
-    "gotico": "Gothic", "gótico": "Gothic",
-    "romanticismo": "Romanticism",
-    "impresionismo": "Impressionism",
-    "postimpresionismo": "Post-Impressionism", "post-impresionismo": "Post-Impressionism",
-    "realismo": "Realism",
-    "surrealismo": "Surrealism",
-    "cubismo": "Cubism",
-    "expresionismo": "Expressionism",
-    "fauvismo": "Fauvism",
-    "simbolismo": "Symbolism",
-    "modernismo": "Art Nouveau",
-}
+def _pick_referer(url: str | None) -> str | None:
+    """Referer básico para hosts que bloquean hotlink. (sin reintentos)"""
+    if not url:
+        return None
+    host = (urlparse(url).hostname or "").lower()
+    if "wikiart.org" in host:
+        return "https://www.wikiart.org/"
+    return None
 
-def styles_from_prompt(p: str) -> set[str]:
-    txt = norm_key(p)
-    cands = set()
-    for es, en in STYLE_MAP.items():
-        if norm_key(es) in txt:
-            cands.add(en.lower())
-    return cands
+def looks_like_image(data: bytes) -> bool:
+    """Detección rápida por cabecera binaria si el servidor no envía Content-Type."""
+    if not data or len(data) < 12:
+        return False
+    b = data[:12]
+    return (
+        b.startswith(b"\xFF\xD8\xFF") or                   # JPG
+        b.startswith(b"\x89PNG\r\n\x1a\n") or              # PNG
+        b.startswith(b"GIF87a") or b.startswith(b"GIF89a") or  # GIF
+        (b[:4] == b"RIFF" and b[8:12] == b"WEBP") or       # WEBP
+        b.startswith(b"BM")                                # BMP
+    )
 
-def show_image_with_status(url: str | None, caption: str, slow_threshold: float = 1.5, timeout: int = 12):
+def show_image_or_message(url: str | None, caption: str,
+                          connect_timeout: float | None = None,
+                          read_timeout: float | None = None,
+                          max_bytes: int | None = None):
+    """
+    Descarga una imagen con límites estrictos de tiempo y tamaño.
+    - Tiempo total por imagen ≈ connect_timeout + read_timeout (por operación de lectura).
+    - Corta si supera 'max_bytes'.
+    - Si no se puede mostrar rápidamente, enseña 'Sin imagen disponible...' y continúa.
+    """
     url = clean_url(url)
     if not url:
         st.info("Sin imagen disponible para este artista.")
         return
-    status_ph = st.empty()
-    status_ph.info("Cargando imagen...")
-    t0 = time.time()
+
+    # Defaults desde las constantes
+    connect_timeout = connect_timeout if connect_timeout is not None else max(0.2, IMG_TIMEOUT_S * 0.35)
+    read_timeout = read_timeout if read_timeout is not None else max(0.4, IMG_TIMEOUT_S * 0.65)
+    max_bytes = max_bytes if max_bytes is not None else MAX_IMG_BYTES
+
+    headers = {
+        "User-Agent": "Mozilla/5.0",
+        "Accept": "image/avif,image/webp,image/apng,image/*,*/*;q=0.8",
+    }
+    ref = _pick_referer(url)
+    if ref:
+        headers["Referer"] = ref
+
+    start = time.time()
     try:
-        r = requests.get(url, timeout=timeout,
-                         headers={"User-Agent": "Mozilla/5.0", "Referer": "https://www.wikiart.org/"},
-                         stream=True)
-        r.raise_for_status()
-        if "image" not in r.headers.get("Content-Type", "").lower():
-            status_ph.warning("No se pudo cargar la imagen.")
+        # timeout=(conn, read) limita handshake+lectura
+        with requests.get(url, headers=headers, timeout=(connect_timeout, read_timeout), stream=True) as r:
+            if r.status_code != 200:
+                st.info("Sin imagen disponible para este artista.")
+                return
+
+            ctype = (r.headers.get("Content-Type") or "").lower()
+            # Leer en trozos controlando tiempo y tamaño
+            buf = bytearray()
+            for chunk in r.iter_content(chunk_size=16_384):
+                if not chunk:
+                    break
+                buf.extend(chunk)
+                # límite de tamaño
+                if len(buf) >= max_bytes:
+                    break
+                # límite de tiempo total
+                if (time.time() - start) >= IMG_TIMEOUT_S:
+                    break
+
+            data = bytes(buf)
+
+        # Validar imagen: por Content-Type o firma binaria
+        if ("image" not in ctype) and not looks_like_image(data):
+            st.info("Sin imagen disponible para este artista.")
             return
-        data = r.content
-        dt = time.time() - t0
-        status_ph.empty()
-        img = Image.open(BytesIO(data))
+
+        # Intentar abrir con PIL (aceptando truncadas)
+        try:
+            img = Image.open(BytesIO(data))
+            # Cargar por si viene lazy
+            img.load()
+        except Exception:
+            st.info("Sin imagen disponible para este artista.")
+            return
+
         st.image(img, caption=caption, width="stretch")
-        if dt > slow_threshold:
-            st.caption(f"Nota: la imagen tardó {dt:.1f}s en cargarse.")
+
+    except requests.exceptions.Timeout:
+        st.info("Sin imagen disponible para este artista.")
     except Exception:
-        status_ph.warning("No se pudo cargar la imagen.")
+        st.info("Sin imagen disponible para este artista.")
 
 # ---------- UI ----------
 prompt = st.text_input("Describe qué estilo de dibujo o pintura te interesa:")
@@ -107,31 +163,30 @@ if st.button("Recomendar"):
         try:
             result = query(prompt)
 
-            # ÚNICO lugar donde pintamos el resumen
+            # Resumen (con respaldo si viene vacío)
             summary_box = st.empty()
             text = (result.get("text") or "").strip()
             if is_empty_response(text):
                 recs = result.get("artists", [])[:5]
                 bullets = "\n".join(
-                    f"- {pretty_name(a.get('artist'))} ({a.get('style','-')})"
-                    for a in recs
+                    f"- {pretty_name(a.get('artist'))} ({a.get('style','-')})" for a in recs
                 ) or "- Sin resultados suficientes, prueba con otra descripción."
                 text = f"Te propongo estos artistas relacionados con “{prompt}”:\n{bullets}"
             summary_box.success(text)
 
-            # ===== listado visual =====
             st.subheader("Artistas sugeridos:")
 
-            # deduplicar por artista y limitar a 6
+            # Deduplicar por artista y limitar a 6
             seen, artists = set(), []
             for a in result.get("artists", []):
-                key = a.get("artist")
+                key = norm_key(a.get("artist"))
                 if key and key not in seen:
                     artists.append(a)
                     seen.add(key)
                 if len(artists) == 6:
                     break
 
+            # Pintar tarjetas con límite de carga por imagen
             for a in artists:
                 artist = pretty_name(a.get("artist"))
                 style  = a.get("style") or "-"
@@ -139,8 +194,7 @@ if st.button("Recomendar"):
                 img    = a.get("image_url")
                 link   = clean_url(a.get("artist_wikiart_url"))
 
-                # Muestra estado, avisa si tarda y si falla
-                show_image_with_status(img, caption=artist)
+                show_image_or_message(img, caption=artist)
 
                 st.markdown(f"**{artist}** — {style} / {genre}")
                 if link:
