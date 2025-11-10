@@ -1,33 +1,51 @@
+import os
+from pathlib import Path
 import pandas as pd
 from tqdm import tqdm
-from llama_index.embeddings.ollama import OllamaEmbedding
-from llama_index.llms.ollama import Ollama
-from llama_index.vector_stores.neo4jvector import Neo4jVectorStore
+
 from llama_index.core import VectorStoreIndex, Document, StorageContext
-from src.config import *
-from pathlib import Path
+from llama_index.vector_stores.neo4jvector import Neo4jVectorStore
+from llama_index.llms.groq import Groq
+
+from src.embeddings_factory import make_embed_model, detect_embedding_dim
+from src.config import *  # si te aporta constantes, mantenlo
 
 def build_index():
     print("Iniciando construcción del índice vectorial...")
 
-    # Modelos Ollama
-    embed_model = OllamaEmbedding(model_name=EMBED_MODEL)
-    llm = Ollama(model=LLM_MODEL)
+    # === LLM: Groq ===
+    llm_model = os.getenv("LLM_MODEL")
+    groq_api_key = os.getenv("GROQ_API_KEY")
+    if not groq_api_key:
+        raise RuntimeError("Falta GROQ_API_KEY en el entorno.")
+    llm = Groq(model=llm_model, api_key=groq_api_key)
+    # (Si en otro sitio usas Settings.llm = llm, hazlo allí.)
 
-    # Conexión a Neo4j
+    # === Embeddings: HuggingFace ===
+    embed_model = make_embed_model()
+    emb_dim = detect_embedding_dim(embed_model)
+    print(f"Dimensión de embeddings detectada: {emb_dim}")
+
+    # === Neo4j Vector Store ===
+    neo4j_uri = os.getenv("NEO4J_URI")
+    neo4j_user = os.getenv("NEO4J_USER")
+    neo4j_password = os.getenv("NEO4J_PASSWORD")
+    neo4j_db = os.getenv("NEO4J_DATABASE")
+
     vstore = Neo4jVectorStore(
-        url=NEO4J_URI,
-        username=NEO4J_USER,
-        password=NEO4J_PASSWORD,
-        database="neo4j",
-        index_name="wikiart_idx",
+        url=neo4j_uri,
+        username=neo4j_user,
+        password=neo4j_password,
+        database=neo4j_db,
+        index_name="wikiart_index",
         node_label="Artwork",
         text_node_property="text",
         embedding_node_property="embedding",
-        embedding_dimension=1024,
+        embedding_dimension=emb_dim,    # <- clave
         distance_strategy="cosine",
     )
 
+    # Crear índice si no existe
     try:
         vstore.create_new_index()
         print("Índice vectorial creado.")
@@ -35,15 +53,14 @@ def build_index():
         if "EquivalentSchemaRuleAlreadyExists" in str(e):
             print("El índice ya existía, continuando sin recrearlo...")
         else:
-            raise e
+            raise
 
+    # === Carga de datos ===
     csv_path = Path("data/processed/wikiart_metadata.csv")
     if not csv_path.exists():
         raise FileNotFoundError(f"No se encontró el archivo: {csv_path}")
 
     df = pd.read_csv(csv_path)
-
-    # Si el dataset tiene menos de 2000 filas, usa todas
     df = df.sample(min(len(df), 2000), random_state=42)
 
     docs = []
@@ -51,8 +68,6 @@ def build_index():
         text = row.get("text", "")
         if not isinstance(text, str) or not text.strip():
             continue
-
-        # Añadimos metadatos enriquecidos
         metadata = {
             "artist": row.get("artist"),
             "style": row.get("style"),
@@ -60,22 +75,20 @@ def build_index():
             "artist_wikiart_url": row.get("artist_wikiart_url"),
             "image_url": row.get("image_url"),
         }
-
         docs.append(Document(text=text, metadata=metadata))
 
     print(f"Total de documentos listos para indexar: {len(docs):,}")
 
-    # Aquí aseguramos que LlamaIndex use Neo4j como destino
     storage_context = StorageContext.from_defaults(vector_store=vstore)
 
+    # Construcción del índice con el embedder HF
     index = VectorStoreIndex.from_documents(
         docs,
         storage_context=storage_context,
-        embed_model=embed_model
+        embed_model=embed_model,
     )
 
     print("Embeddings generados e indexados correctamente en Neo4j.")
-    print(f"Índice: wikiart_idx  |  Documentos: {len(docs):,}")
 
 if __name__ == "__main__":
     build_index()

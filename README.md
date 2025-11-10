@@ -107,7 +107,9 @@ Para el funcionamiento de la aplicación es necesario crear un .env en la ruta p
 ```bash
 LLM_PROVIDER=groq
 LLM_MODEL=llama-3.3-70b-versatile
-EMBED_MODEL=mxbai-embed-large
+
+EMBED_PROVIDER=hf
+HF_EMBED_MODEL=intfloat/multilingual-e5-large
 
 NEO4J_URI=bolt://localhost:7687
 NEO4J_USER=neo4j

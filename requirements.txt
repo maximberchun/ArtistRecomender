@@ -5,11 +5,13 @@ numpy
 python-dotenv
 requests
 tqdm
+types-tqdm
 groq
 selenium
 undetected-chromedriver
 ddgs
-
+llama-index-embeddings-huggingface
+sentence-transformers
 
 llama-index
 llama-index-graph-stores-neo4j
