@@ -8,7 +8,6 @@ from llama_index.vector_stores.neo4jvector import Neo4jVectorStore
 from llama_index.llms.groq import Groq
 
 from src.embeddings_factory import make_embed_model, detect_embedding_dim
-from src.config import *  # si te aporta constantes, mantenlo
 
 def build_index():
     print("Iniciando construcción del índice vectorial...")
@@ -89,6 +88,7 @@ def build_index():
     )
 
     print("Embeddings generados e indexados correctamente en Neo4j.")
+    return index
 
 if __name__ == "__main__":
     build_index()
