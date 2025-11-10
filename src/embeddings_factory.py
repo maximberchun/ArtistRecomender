@@ -1,5 +1,4 @@
 import os
-from typing import Optional
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 
 def make_embed_model():
