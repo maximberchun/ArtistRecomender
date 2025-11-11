@@ -13,6 +13,9 @@ import streamlit.components.v1 as components  # JS/CSS patches
 
 from src.query_engine import build_query_engine
 
+import warnings
+warnings.filterwarnings("ignore", message=".*validate_default.*", category=UserWarning)
+
 # ======================== Configuración de página ========================
 st.set_page_config(page_title="Recomendador de Artistas", layout="centered")
 
@@ -171,7 +174,7 @@ def show_image_or_message(url: str | None, caption: str,
         st.info("Sin imagen disponible para este artista.")
         return
 
-    st.image(img, caption=caption, use_container_width =True)
+    st.image(img, caption=caption, width='content')
 
 def render_artist_card(artist, style, genre, img, link, enable_images=True):
     with st.container():
