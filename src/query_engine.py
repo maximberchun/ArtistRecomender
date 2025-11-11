@@ -1,5 +1,5 @@
 import os
-from llama_index.embeddings.ollama import OllamaEmbedding
+from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from llama_index.vector_stores.neo4jvector import Neo4jVectorStore
 from llama_index.core import StorageContext, VectorStoreIndex
 from llama_index.core.prompts import PromptTemplate
@@ -10,14 +10,14 @@ from src.config import *
 def build_query_engine():
     # Modelos
     llm = Groq(model=os.getenv("LLM_MODEL"), api_key=os.getenv("GROQ_API_KEY"))
-    embed_model = OllamaEmbedding(model_name=os.getenv("EMBED_MODEL"))
+    embed_model = HuggingFaceEmbedding(model_name=os.getenv("HF_EMBED_MODEL"))
 
     # Vector store Neo4j
     vstore = Neo4jVectorStore(
         url=NEO4J_URI, username=NEO4J_USER, password=NEO4J_PASSWORD,
-        database="neo4j", index_name="wikiart_idx",
+        database="neo4j", index_name="wikiart_index_384_v2",
         node_label="Artwork", text_node_property="text",
-        embedding_node_property="embedding", embedding_dimension=1024
+        embedding_node_property="embedding", embedding_dimension=384
     )
 
     storage_context = StorageContext.from_defaults(vector_store=vstore)

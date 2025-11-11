@@ -36,11 +36,11 @@ def build_index():
         username=neo4j_user,
         password=neo4j_password,
         database=neo4j_db,
-        index_name="wikiart_index",
+        index_name="wikiart_index_384_v2",
         node_label="Artwork",
         text_node_property="text",
         embedding_node_property="embedding",
-        embedding_dimension=emb_dim,    # <- clave
+        embedding_dimension=emb_dim,
         distance_strategy="cosine",
     )
 
