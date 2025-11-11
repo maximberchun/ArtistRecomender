@@ -1,4 +1,5 @@
-import requests, time
+import requests 
+import time
 
 def wait_for_ollama(max_retries=10, delay=2):
     for i in range(max_retries):
