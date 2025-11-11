@@ -9,7 +9,6 @@ from datetime import datetime
 import requests
 from PIL import Image, ImageFile
 import streamlit as st
-import streamlit.components.v1 as components  # JS/CSS patches
 
 from src.query_engine import build_query_engine
 
