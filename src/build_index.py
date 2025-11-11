@@ -17,7 +17,7 @@ def build_index():
     groq_api_key = os.getenv("GROQ_API_KEY")
     if not groq_api_key:
         raise RuntimeError("Falta GROQ_API_KEY en el entorno.")
-    llm = Groq(model=llm_model, api_key=groq_api_key)
+    llm = Groq(model=llm_model, api_key=groq_api_key)  # noqa: F841
     # (Si en otro sitio usas Settings.llm = llm, hazlo allí.)
 
     # === Embeddings: HuggingFace ===
