@@ -5,13 +5,14 @@ import time
 from io import BytesIO
 from urllib.parse import urlparse
 from datetime import datetime
-
+from src.security_images import safe_fetch_image_bytes
 import requests
 from PIL import Image, ImageFile
 import streamlit as st
 from dotenv import load_dotenv
 from PIL import Image, UnidentifiedImageError
 from src.query_engine import build_query_engine
+from src.auth import login_guard
 
 import warnings
 try:
@@ -32,7 +33,7 @@ load_dotenv()
 
 # ======================== Configuración de página ========================
 st.set_page_config(page_title="Recomendador de Artistas", layout="centered")
-
+_ = login_guard()
 # ======================== Límites y opciones ========================
 IMG_TIMEOUT_S = float(os.getenv("IMG_TIMEOUT_S", "5.0"))        # seg por imagen
 MAX_IMG_BYTES = int(os.getenv("MAX_IMG_KB", "350")) * 1024      # KB por imagen
@@ -66,7 +67,7 @@ st.markdown("""
 # ======================== Título (alineado con el chat) ========================
 st.markdown('<div class="inner-wrap">', unsafe_allow_html=True)
 st.title("Recomendador de Artistas")
-st.caption("Describe un estilo, técnica o temática y obtén recomendaciones de artistas. Las imágenes se cargan automáticamente.")
+st.caption("Describe un estilo, técnica o temática que te gustan y obtén recomendaciones de artistas.")
 st.markdown('</div>', unsafe_allow_html=True)
 
 # ======================== Motor de consulta ========================
@@ -169,9 +170,6 @@ def _fetch_image_bytes(url: str, connect_timeout: float, read_timeout: float, ma
 
 
 def show_image_or_message(url: str | None, caption: str,
-                          connect_timeout: float | None = None,
-                          read_timeout: float | None = None,
-                          max_bytes: int | None = None,
                           enable_images: bool = True):
     url = clean_url(url)
     if not enable_images:
@@ -181,43 +179,17 @@ def show_image_or_message(url: str | None, caption: str,
         st.info("Sin imagen disponible para este artista.")
         return
 
-    connect_timeout = connect_timeout if connect_timeout is not None else max(0.4, IMG_TIMEOUT_S * 0.5)
-    read_timeout    = read_timeout    if read_timeout    is not None else max(0.8, IMG_TIMEOUT_S * 0.8)
-    max_bytes       = max_bytes       if max_bytes       is not None else MAX_IMG_BYTES
-
-    # Intento 1 (parámetros normales)
-    data, complete = _fetch_image_bytes(url, connect_timeout, read_timeout, max_bytes)
-
-    def _try_render(b: bytes) -> bool:
-        try:
-            im = Image.open(BytesIO(b))
-            # verify comprueba integridad; si falla, lanzará excepción
-            im.verify()
-            # reabrimos para realmente cargar los píxeles
-            im = Image.open(BytesIO(b))
-            im.load()
-            st.image(im, caption=caption)
-            return True
-        except (UnidentifiedImageError, OSError):
-            return False
-
-    if data and (complete and _try_render(data)):
-        return
-    if data and (not complete) and _try_render(data):
-        # a veces no hay Content-Length pero el fichero está bien
+    data = safe_fetch_image_bytes(url)
+    if not data:
+        st.info("Sin imagen disponible para este artista.")
         return
 
-    # Intento 2 (retry más generoso)
-    data2, complete2 = _fetch_image_bytes(
-        url,
-        connect_timeout=connect_timeout * 2.0,
-        read_timeout=read_timeout * 2.0,
-        max_bytes=int(max_bytes * 2.0),
-    )
-    if data2 and _try_render(data2):
-        return
-
-    st.info("Sin imagen disponible para este artista.")
+    try:
+        im = Image.open(BytesIO(data))
+        im.load()
+        st.image(im, caption=caption)
+    except Exception:
+        st.info("Sin imagen disponible para este artista.")
 
 def render_artist_card(artist, style, genre, img, link, enable_images=True):
     with st.container():

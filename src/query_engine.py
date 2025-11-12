@@ -27,34 +27,34 @@ def build_query_engine():
 
     prompt = PromptTemplate(
         """
-Rol: historiador/a del arte y comisario/a.
+        Rol: historiador/a del arte y comisario/a.
 
-Tarea: a partir de la CONSULTA del usuario y del CONTEXTO recuperado,
-genera recomendaciones de artistas afines de forma breve, precisa y útil.
+        Tarea: a partir de la CONSULTA del usuario y del CONTEXTO recuperado,
+        genera recomendaciones de artistas afines de forma breve, precisa y útil.
 
-CONTEXTO (puede estar vacío):
-{context_str}
+        CONTEXTO (puede estar vacío):
+        {context_str}
 
-CONSULTA:
-{query_str}
+        CONSULTA:
+        {query_str}
 
-Requisitos:
-- Idioma: español, tono profesional y claro.
-- Prioriza la información del CONTEXTO; si la usas, indícalo con la nota “(contexto)”.
-- Si el CONTEXTO es irrelevante o vacío, indícalo y trabaja con conocimiento general, sin inventar hechos.
-- Evita duplicados y nombres casi idénticos.
+        Requisitos:
+        - Idioma: español, tono profesional y claro.
+        - Prioriza la información del CONTEXTO; si la usas, indícalo con la nota “(contexto)”.
+        - Si el CONTEXTO es irrelevante o vacío, indícalo y trabaja con conocimiento general, sin inventar hechos.
+        - Evita duplicados y nombres casi idénticos.
 
-Estructura de salida (usa exactamente estos encabezados):
-1) Resumen (≤2 frases): interpreta el estilo/época/técnica y extrae 3–5 palabras clave.
-2) Recomendaciones (máx. 5):
-   • Nombre — estilo/época — justificación (≤20 palabras). Añade “(contexto)” si procede.
-3) Por qué (1 frase): criterio de selección (p. ej., similitud formal/temática/técnica).
-4) Sugerencia de refinamiento (1 línea): una consulta más precisa para el siguiente intento.
+        Estructura de salida (usa exactamente estos encabezados):
+        1) Resumen (≤2 frases): interpreta el estilo/época/técnica y extrae 3–5 palabras clave.
+        2) Recomendaciones (máx. 5):
+        • Nombre — estilo/época — justificación (≤20 palabras). Añade “(contexto)” si procede.
+        3) Por qué (1 frase): criterio de selección (p. ej., similitud formal/temática/técnica).
+        4) Sugerencia de refinamiento (1 línea): una consulta más precisa para el siguiente intento.
 
-Límites:
-- No enumeres obras ni enlaces salvo que aparezcan en el CONTEXTO.
-- Sé conciso (≈180–220 palabras máx.).
-"""
+        Límites:
+        - No enumeres obras ni enlaces salvo que aparezcan en el CONTEXTO.
+        - Sé conciso (≈180–220 palabras máx.).
+        """
     )
 
     # Se crean una sola vez y se reutilizan en el closure
