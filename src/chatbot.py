@@ -196,7 +196,7 @@ def show_image_or_message(url: str | None, caption: str,
             # reabrimos para realmente cargar los píxeles
             im = Image.open(BytesIO(b))
             im.load()
-            st.image(im, caption=caption, width=False)
+            st.image(im, caption=caption)
             return True
         except (UnidentifiedImageError, OSError):
             return False
