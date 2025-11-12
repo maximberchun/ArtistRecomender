@@ -9,6 +9,14 @@ from llama_index.llms.groq import Groq
 
 from src.embeddings_factory import make_embed_model, detect_embedding_dim
 
+import warnings
+try:
+    from pydantic.warnings import UnsupportedFieldAttributeWarning
+    warnings.filterwarnings("ignore", category=UnsupportedFieldAttributeWarning)
+except Exception:
+    # fallback por si la clase cambia en otra versión
+    warnings.filterwarnings("ignore", message=".*validate_default.*", category=UserWarning)
+
 def build_index():
     print("Iniciando construcción del índice vectorial...")
 

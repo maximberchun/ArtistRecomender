@@ -9,17 +9,32 @@ from datetime import datetime
 import requests
 from PIL import Image, ImageFile
 import streamlit as st
-
+from dotenv import load_dotenv
+from PIL import Image, UnidentifiedImageError
 from src.query_engine import build_query_engine
 
 import warnings
+try:
+    from pydantic.warnings import UnsupportedFieldAttributeWarning
+    warnings.filterwarnings("ignore", category=UnsupportedFieldAttributeWarning)
+except Exception:
+    # fallback por si la clase cambia en otra versión
+    warnings.filterwarnings("ignore", message=".*validate_default.*", category=UserWarning)
+
 warnings.filterwarnings("ignore", message=".*validate_default.*", category=UserWarning)
+# Evitar consultas al Hub y limitar hilos
+os.environ.setdefault("HF_HUB_DISABLE_TELEMETRY", "1")
+os.environ.setdefault("TRANSFORMERS_OFFLINE", "1")
+os.environ.setdefault("OMP_NUM_THREADS", "4")
+os.environ.setdefault("MKL_NUM_THREADS", "4")
+
+load_dotenv()
 
 # ======================== Configuración de página ========================
 st.set_page_config(page_title="Recomendador de Artistas", layout="centered")
 
 # ======================== Límites y opciones ========================
-IMG_TIMEOUT_S = float(os.getenv("IMG_TIMEOUT_S", "2.2"))        # seg por imagen
+IMG_TIMEOUT_S = float(os.getenv("IMG_TIMEOUT_S", "5.0"))        # seg por imagen
 MAX_IMG_BYTES = int(os.getenv("MAX_IMG_KB", "350")) * 1024      # KB por imagen
 IMG_MAX_W = int(os.getenv("IMG_MAX_W", "960"))                  # ancho máx. en px (visual)
 MAX_ARTISTS_DEFAULT = int(os.getenv("MAX_ARTISTS", "6"))        # artistas por respuesta
@@ -111,34 +126,47 @@ def looks_like_image(data: bytes) -> bool:
         b.startswith(b"BM")
     )
 
-def _fetch_image_bytes(url: str, connect_timeout: float, read_timeout: float, max_bytes: int) -> bytes | None:
+def _fetch_image_bytes(url: str, connect_timeout: float, read_timeout: float, max_bytes: int) -> tuple[bytes | None, bool]:
     headers = {
         "User-Agent": "Mozilla/5.0",
-        "Accept": "image/avif,image/webp,image/apng,image/*,*/*;q=0.8",
+        # evita AVIF si no tienes plugin
+        "Accept": "image/jpeg,image/webp,image/png,image/*;q=0.8,*/*;q=0.5",
     }
     ref = _pick_referer(url)
     if ref:
         headers["Referer"] = ref
 
-    start = time.time()
-    with requests.get(url, headers=headers, timeout=(connect_timeout, read_timeout), stream=True) as r:
-        if r.status_code != 200:
-            return None
-        ctype = (r.headers.get("Content-Type") or "").lower()
-        buf = bytearray()
-        for chunk in r.iter_content(chunk_size=16_384):
-            if not chunk:
-                break
-            buf.extend(chunk)
-            if len(buf) >= max_bytes:
-                break
-            if (time.time() - start) >= IMG_TIMEOUT_S:
-                break
+    try:
+        with requests.get(url, headers=headers, timeout=(connect_timeout, read_timeout), stream=True) as r:
+            if r.status_code != 200:
+                return None, False
 
-        data = bytes(buf)
-        if ("image" not in ctype) and not looks_like_image(data):
-            return None
-        return data
+            # Si sabemos el tamaño esperado, úsalo para decidir si está completa
+            content_len = None
+            try:
+                content_len = int(r.headers.get("Content-Length", "0")) or None
+                if content_len and content_len > max_bytes:
+                    # muy grande para nuestro límite → no intentes media descarga
+                    return None, False
+            except Exception:
+                content_len = None
+
+            buf = bytearray()
+            for chunk in r.iter_content(chunk_size=32_768):
+                if not chunk:
+                    break
+                buf.extend(chunk)
+                if len(buf) > max_bytes:
+                    # cortamos por límite → incompleta
+                    return None, False
+
+            data = bytes(buf)
+            # completa si coincide con Content-Length (cuando existe)
+            complete = (content_len is None) or (len(data) == content_len)
+            return data, complete
+    except Exception:
+        return None, False
+
 
 def show_image_or_message(url: str | None, caption: str,
                           connect_timeout: float | None = None,
@@ -153,27 +181,43 @@ def show_image_or_message(url: str | None, caption: str,
         st.info("Sin imagen disponible para este artista.")
         return
 
-    connect_timeout = connect_timeout if connect_timeout is not None else max(0.2, IMG_TIMEOUT_S * 0.35)
-    read_timeout    = read_timeout    if read_timeout    is not None else max(0.4, IMG_TIMEOUT_S * 0.65)
+    connect_timeout = connect_timeout if connect_timeout is not None else max(0.4, IMG_TIMEOUT_S * 0.5)
+    read_timeout    = read_timeout    if read_timeout    is not None else max(0.8, IMG_TIMEOUT_S * 0.8)
     max_bytes       = max_bytes       if max_bytes       is not None else MAX_IMG_BYTES
 
-    try:
-        data = _fetch_image_bytes(url, connect_timeout, read_timeout, max_bytes)
-    except Exception:
-        data = None
+    # Intento 1 (parámetros normales)
+    data, complete = _fetch_image_bytes(url, connect_timeout, read_timeout, max_bytes)
 
-    if not data:
-        st.info("Sin imagen disponible para este artista.")
+    def _try_render(b: bytes) -> bool:
+        try:
+            im = Image.open(BytesIO(b))
+            # verify comprueba integridad; si falla, lanzará excepción
+            im.verify()
+            # reabrimos para realmente cargar los píxeles
+            im = Image.open(BytesIO(b))
+            im.load()
+            st.image(im, caption=caption, width=False)
+            return True
+        except (UnidentifiedImageError, OSError):
+            return False
+
+    if data and (complete and _try_render(data)):
+        return
+    if data and (not complete) and _try_render(data):
+        # a veces no hay Content-Length pero el fichero está bien
         return
 
-    try:
-        img = Image.open(BytesIO(data))
-        img.load()
-    except Exception:
-        st.info("Sin imagen disponible para este artista.")
+    # Intento 2 (retry más generoso)
+    data2, complete2 = _fetch_image_bytes(
+        url,
+        connect_timeout=connect_timeout * 2.0,
+        read_timeout=read_timeout * 2.0,
+        max_bytes=int(max_bytes * 2.0),
+    )
+    if data2 and _try_render(data2):
         return
 
-    st.image(img, caption=caption, width='content')
+    st.info("Sin imagen disponible para este artista.")
 
 def render_artist_card(artist, style, genre, img, link, enable_images=True):
     with st.container():

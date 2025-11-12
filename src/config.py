@@ -12,7 +12,6 @@ LLM_MODEL = os.getenv("LLM_MODEL")
 EMBED_MODEL = os.getenv("EMBED_MODEL")
 
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 EMBEDDING_DIM = int(os.getenv("EMBEDDING_DIM", 1024))
 NEO4J_DATABASE = os.getenv("NEO4J_DATABASE", "neo4j")
