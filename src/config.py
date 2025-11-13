@@ -23,7 +23,6 @@ LLM_MODEL = require_env("LLM_MODEL")
 GROQ_API_KEY = require_env("GROQ_API_KEY")
 
 # === Embeddings ===
-# Si usas HF: HF_EMBED_MODEL debe existir (p.ej. intfloat/multilingual-e5-small)
 HF_EMBED_MODEL = require_env("HF_EMBED_MODEL")
 
 # Dim por si algún sitio la necesita fija (mejor detectarla en runtime)

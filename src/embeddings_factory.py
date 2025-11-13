@@ -13,7 +13,7 @@ os.environ.setdefault("HF_HUB_DISABLE_TELEMETRY", "1")
 # Si ya ejecutaste una vez y tienes el modelo en caché, puedes dejarlo en "1"
 os.environ.setdefault("TRANSFORMERS_OFFLINE", "1")
 
-# Limitar hilos (Windows suele ir mejor con pocos)
+# Limitar hilos
 os.environ.setdefault("OMP_NUM_THREADS", "4")
 os.environ.setdefault("MKL_NUM_THREADS", "4")
 

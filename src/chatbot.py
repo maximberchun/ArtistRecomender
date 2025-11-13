@@ -1,7 +1,6 @@
 import os
 import re
 import unicodedata
-import time
 from io import BytesIO
 from urllib.parse import urlparse
 from datetime import datetime
@@ -10,7 +9,6 @@ import requests
 from PIL import Image, ImageFile
 import streamlit as st
 from dotenv import load_dotenv
-from PIL import Image, UnidentifiedImageError
 from src.query_engine import build_query_engine
 from src.auth import login_guard
 
@@ -147,7 +145,7 @@ def _fetch_image_bytes(url: str, connect_timeout: float, read_timeout: float, ma
             try:
                 content_len = int(r.headers.get("Content-Length", "0")) or None
                 if content_len and content_len > max_bytes:
-                    # muy grande para nuestro límite → no intentes media descarga
+                    # muy grande para nuestro límite
                     return None, False
             except Exception:
                 content_len = None
@@ -158,11 +156,11 @@ def _fetch_image_bytes(url: str, connect_timeout: float, read_timeout: float, ma
                     break
                 buf.extend(chunk)
                 if len(buf) > max_bytes:
-                    # cortamos por límite → incompleta
+                    # cortamos por límite
                     return None, False
 
             data = bytes(buf)
-            # completa si coincide con Content-Length (cuando existe)
+            # completa si coincide con Content-Length
             complete = (content_len is None) or (len(data) == content_len)
             return data, complete
     except Exception:
@@ -246,7 +244,7 @@ with st.sidebar:
 1) Escribe una descripción del estilo, técnica o temática.  
 2) Recibirás un resumen y artistas deduplicados.  
 3) Si una imagen no carga rápido, verás un aviso.  
-4) Puedes limpiar o descargar la conversación.
+4) Puedes limpiar la conversación.
 
 Ejemplos:
 - Realismo ruso psicológico.
@@ -280,9 +278,6 @@ Ejemplos:
 
     if st.button("Borrar conversación"):
         _reset_chat()
-
-    chat_txt = export_chat_as_txt(st.session_state.messages)
-    st.download_button("Descargar chat (.txt)", data=chat_txt, file_name="recomendador_artistas_chat.txt", mime="text/plain")
 
     st.divider()
     st.subheader("Acciones")
@@ -366,10 +361,10 @@ if user_input:
                     "ts": now_iso()
                 })
 
-                fb1, fb2, _ = st.columns([1,1,4])
-                with fb1:
+                c1, c2, c3 = st.columns([1,1,4])
+                with c1:
                     st.button("Resultado útil", key=f"fb-up-{len(st.session_state.messages)}")
-                with fb2:
+                with c2:
                     st.button("No me sirve", key=f"fb-down-{len(st.session_state.messages)}")
 
             except Exception as e:

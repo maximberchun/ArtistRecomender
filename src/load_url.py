@@ -12,7 +12,7 @@ INPUT_FILE = BASE_DIR / "data" / "processed" / "wikiart_metadata_clean.csv"
 OUTPUT_FILE = BASE_DIR / "data" / "processed" / "wikiart_metadata.csv"
 
 # Número máximo de artistas a procesar (para pruebas)
-LIMIT = None  # o por ejemplo 200
+LIMIT = None
 
 
 def build_wikiart_url(artist_name: str) -> str:

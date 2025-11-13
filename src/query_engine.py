@@ -5,7 +5,7 @@ from llama_index.core import StorageContext, VectorStoreIndex
 from llama_index.core.prompts import PromptTemplate
 from llama_index.llms.groq import Groq
 from llama_index.core.postprocessor import SimilarityPostprocessor
-from src.config import *
+from src.config import NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD
 
 def build_query_engine():
     # Modelos
@@ -85,7 +85,7 @@ def build_query_engine():
                 "artist_wikiart_url": meta.get("artist_wikiart_url"),
                 "score": float(getattr(r, "score", 0.0) or 0.0),
             })
-        artists.sort(key=lambda x: x["score"], reverse=True)
+        artists.sort(key=lambda x: float(x.get("score") or 0.0), reverse=True) # type: ignore
         return {"text": str(resp), "artists": artists}
 
     return query

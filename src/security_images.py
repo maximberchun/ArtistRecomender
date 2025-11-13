@@ -6,8 +6,7 @@ from urllib.parse import urlparse
 from io import BytesIO
 from PIL import Image, UnidentifiedImageError
 
-# Ajusta a tus necesidades:
-ALLOWED_HOSTS = {"www.wikiart.org", "wikiart.org"}  # o deja set() para permitir externos (no recomendado)
+ALLOWED_HOSTS = {"www.wikiart.org", "wikiart.org"}
 MAX_IMG_BYTES = 800 * 1024
 CONNECT_TIMEOUT, READ_TIMEOUT = 2.0, 3.0
 MAX_REDIRECTS = 3
@@ -23,7 +22,7 @@ def _is_private_ip(host: str) -> bool:
                     return True
         return False
     except Exception:
-        # si falla la resolución DNS, deniega
+        # si falla la resolución DNS deniega
         return True
 
 def safe_fetch_image_bytes(url: str) -> bytes | None:
