@@ -276,3 +276,5 @@ Recursos y bibliotecas que han contribuido indirectamente a este proyecto:
 - **Streamlit Docs** – Documentación oficial de Streamlit, que ayudó a construir rápidamente la interfaz web interactiva.
 
 <p align="right">(<a href="#readme-top">volver arriba</a>)</p>
+
+> © 2025, Maxim Berchun – Universidad de León  
