@@ -24,7 +24,7 @@
       <ul>
         <li><a href="#requisitos-previos">Requisitos previos</a></li>
         <li><a href="#obtener-la-api-key-de-groq">Obtener la API key de Groq</a></li>
-        <li><a href="#instalación">Instalación</a></li>
+        <li><a href="#instalacion">Instalación</a></li>
       </ul>
     </li>
     <li><a href="#uso">Uso</a></li>
@@ -44,7 +44,7 @@ Algunas ventajas y características del proyecto son:
 
 - **Recomendaciones personalizadas:** Encuentra artistas similares según tus preferencias en géneros o estilos artísticos, o incluso sugiere estilos relacionados en base a un artista que te interese.
 - **Descubrimiento simplificado:** Te ayuda a descubrir nuevas corrientes artísticas de forma automatizada, sin tener que buscar manualmente entre miles de obras.
-- **Tecnología híbrida IA + BD Gráfica:** Combina un modelo de lenguaje (LLM) con una base de datos gráfica de vectores para analizar descripciones de obras de arte y encontrar similitudes más allá de coincidencias exactas.
+- **Tecnología híbrida IA + BD gráfica:** Combina un modelo de lenguaje (LLM) con una base de datos de grafos con soporte vectorial para analizar descripciones de obras de arte y encontrar similitudes más allá de coincidencias exactas.
 
 <p align="right">(<a href="#readme-top">volver arriba</a>)</p>
 
@@ -52,10 +52,11 @@ Algunas ventajas y características del proyecto son:
 
 En este proyecto se integran varias tecnologías y herramientas destacadas para lograr su funcionalidad:
 
-- Framework web para crear la interfaz de usuario de forma sencilla.
-- Biblioteca para indexar datos y conectarlos con modelos de lenguaje (usada para gestionar el índice vectorial).
-- Base de datos de grafos utilizada como *vector store* para almacenar las representaciones vectoriales de las obras de arte.
-- Plataforma para ejecutar modelos de lenguaje grandes en nube a través del provider Groq (se utiliza para generar *embeddings* y respuestas con un modelo LLM en nube).
+- **Streamlit** – Framework web para crear la interfaz de usuario de forma sencilla.
+- **LlamaIndex** – Biblioteca para indexar datos y conectarlos con modelos de lenguaje (gestiona el índice vectorial sobre Neo4j).
+- **Neo4j** – Base de datos de grafos utilizada como *vector store* para almacenar las representaciones vectoriales de las obras de arte.
+- **GroqCloud** – Plataforma para ejecutar modelos de lenguaje grandes en la nube (LLM) de forma rápida y con baja latencia.
+- **Hugging Face Embeddings** – Modelo de *embeddings* multilingüe (`intfloat/multilingual-e5-small`) para representar descripciones y consultas como vectores.
 
 <p align="right">(<a href="#readme-top">volver arriba</a>)</p>
 
@@ -68,127 +69,154 @@ Esta sección te guiará en cómo configurar y ejecutar el proyecto en tu máqui
 Asegúrate de tener instaladas las siguientes herramientas o software en tu sistema:
 
 - **Python 3.x** – Lenguaje principal en el que está implementado el proyecto.
-- **Docker y Docker Compose** – Para ejecutar fácilmente la base de datos Neo4j en un contenedor.
-- **Neo4j** – Si prefieres instalar Neo4j directamente en lugar de usar Docker.
-- **Ollama** – Necesario para cargar y ejecutar los modelos de lenguaje.
-- **Proveedor LLM** – GroqCloud - el provider que permite ejecutar el modelo de Llama en nube a pesar de que la aplicación se ejecuta localmente.
-- **Bibliotecas Python** – Las dependencias Python se indican en `requirements.txt` (incluye llama-index, pandas, python-dotenv, etc.). Se recomienda instalarlas mediante pip una vez clonado el repositorio.
+- **Docker y Docker Compose** – Para ejecutar fácilmente Neo4j y la aplicación en contenedores.
+- **Cuenta en GroqCloud** – Necesaria para obtener la API key y usar el LLM en la nube.
+- **Bibliotecas Python** – Las dependencias se indican en `requirements.txt` (incluye LlamaIndex, pandas, python-dotenv, etc.). Se recomienda instalarlas mediante `pip` una vez clonado el repositorio.
 
-> **Nota:** Ollama debe tener disponibles los modelos adecuados para este proyecto. Por defecto, en el archivo `.env` se especifica un modelo de *embeddings* (`mxbai-embed-large`). No es necesario descargar el modelo de `llama` ya que se usa la ejecución en nube a través de `Groq`. El modelo de *embeddings* **mxbai-embed-large** y un modelo LLM basado en Llama 2 son recomendados para resultados óptimos.
+> **Nota:** Los *embeddings* se generan con un modelo de Hugging Face (`intfloat/multilingual-e5-small`) y el LLM se ejecuta a través de GroqCloud.
 
 ### Obtener la API key de Groq
 
-1. Crea una cuenta y ve a la consola de GroqCloud → **API Keys** (https://console.groq.com/keys).
+1. Crea una cuenta y ve a la consola de GroqCloud → **API Keys**: https://console.groq.com/keys
 2. Pulsa **Create API Key**.
-3. Guárdala como variable de entorno o en un `.env` local (git-ignorado).
+3. Guárdala como variable de entorno o en un archivo `.env` local (git-ignorado).
 
 ### Instalación
 
-Sigue estos pasos para instalar y poner en marcha la aplicación:
-
-1. **Clona el repositorio:**
-
-    ```bash
-    git clone https://github.com/maximberchun/ArtistRecomender.git
-    ```
-
-2. **Instala las dependencias de Python:**  
-    Navega al directorio del proyecto y ejecuta: 
-
-    ```bash
-    pip install -r requirements.txt
-    ```
-
-    Esto instalará las librerías necesarias, como LlamaIndex. Ten en cuenta que esto no incluye la descarga de los modelos de Ollama (ver nota arriba).
-
-2. **Prepara .env:**  
-Para el funcionamiento de la aplicación es necesario crear un .env en la ruta principal de la carpeta del proyecto y que tenga el siguiente contenido: 
+#### 1. Clonar el repositorio
 
 ```bash
+git clone https://github.com/maximberchun/ArtistRecomender.git
+cd ArtistRecomender
+```
+
+#### 2. Crear archivo `.env`
+
+Para el funcionamiento de la aplicación es necesario crear un `.env` en la ruta principal de la carpeta del proyecto con al menos el siguiente contenido:
+
+```bash
+# LLM (Groq)
 LLM_PROVIDER=groq
 LLM_MODEL=llama-3.3-70b-versatile
+# GROQ_API_KEY= tu llave de groq
 
+# Embeddings (Hugging Face)
 EMBED_PROVIDER=hf
-HF_EMBED_MODEL=intfloat/multilingual-e5-large
+HF_EMBED_MODEL=intfloat/multilingual-e5-small
+EMBEDDING_DIM=384
 
+# Neo4j
 NEO4J_URI=bolt://localhost:7687
 NEO4J_USER=neo4j
 NEO4J_PASSWORD=password
+NEO4J_DATABASE=neo4j 
 
-# GROQ_API_KEY = tu_api_key_aqui (descomenta y agrega tu clave Groq)
+# Autentificación
+APP_ADMIN_NAME=Admin
+APP_ADMIN_USER=admin
+# APP_ADMIN_PASSWORD_HASH= tu contraseña hasheada (ejecutar create_hash.py)
+APP_COOKIE_NAME=artist_recommender_auth
+# APP_COOKIE_KEY= llave de cookie
+APP_COOKIE_DAYS=1
 ```
 
-Crea tu api key de Groq aqui: (https://console.groq.com/keys)
+> Si ejecutas Neo4j fuera de Docker, ajusta `NEO4J_URI` a `bolt://localhost:7687`.
 
-3. **Descarga/Prepara el conjunto de datos (opcional):**  
+#### 3. Instalar dependencias (LOCAL)
+
+Si prefieres ejecutar la aplicación directamente con Python:
+
+```bash
+pip install -r requirements.txt
+```
+
+Esto instalará las librerías necesarias, como LlamaIndex, Streamlit, Neo4j driver, etc. Los modelos de Hugging Face se descargarán automáticamente la primera vez que se utilicen.
+
+#### 4. Iniciar Neo4j con Docker Compose
+
+Primero se crea la imagen de Docker:
+
+```bash
+docker compose build
+```
+
+La forma recomendada de iniciar Neo4j (y la aplicación) es usando Docker Compose desde la raíz del proyecto:
+
+```bash
+docker compose up
+```
+
+Esto levantará:
+
+- Un contenedor **Neo4j** escuchando en `bolt://neo4j:7687`.
+- Un contenedor **app** con la aplicación Streamlit en `http://localhost:8501`.
+
+Si solo quieres levantar Neo4j (por ejemplo, para usarlo con Python local), puedes adaptar el `docker-compose.yml` o usar una instancia de Neo4j instalada en tu sistema.
+
+#### 5. Construir el índice vectorial
+
+Una vez Neo4j esté en ejecución y la configuración sea correcta, debes poblar la base de datos con los *embeddings* del dataset. Ejecuta el script:
+
+```bash
+python -m src.build_index
+```
+
+Este script leerá el fichero CSV (`data/processed/wikiart_clean.csv`) y creará documentos con sus descripciones. Luego generará *embeddings* para cada documento usando el modelo de Hugging Face configurado y los almacenará en Neo4j como vectores. Por defecto, se toma una muestra aleatoria de 2000 obras para indexar, con el fin de agilizar el proceso.
+
+#### 6. Ejecutar la aplicación web
+
+Finalmente, inicia la interfaz de usuario basada en Streamlit:
+
+```bash
+streamlit run src/chatbot.py
+```
+
+Si estás utilizando Docker Compose, la app ya quedará expuesta en `http://localhost:8501` al ejecutar `docker compose up`.
+
+<p align="right">(<a href="#readme-top">volver arriba</a>)</p>
+
+#### 7. Ejecuciones opcionales
+
+- **Descarga/Prepara el conjunto de datos:**  
     El proyecto usa el dataset **WikiArt** (metadatos de obras de arte) disponible en Hugging Face. Si lo deseas, puedes generar un nuevo CSV con los datos ejecutando el script:
 
     ```bash
     python src/load_dataset.py
     ```
 
-    Este paso puede tardar bastante y consumir hasta ~60 GB de espacio en caché, ya que descarga todos los metadatos de WikiArt. No es obligatorio ejecutarlo si ya dispones de un archivo CSV preprocesado. En caso de tener un `wikiart_clean.csv` generado previamente, simplemente colócalo en `data/processed/` dentro del proyecto.
+    Este paso puede tardar bastante y consumir hasta ~60 GB de espacio en caché, ya que descarga todos los metadatos de WikiArt. No es obligatorio ejecutarlo si ya dispones de un archivo CSV preprocesado. En caso de tener un `wikiart_metadata.csv` generado previamente, simplemente colócalo en `data/processed/` dentro del proyecto.
 
-4. **Inicia la base de datos Neo4j:**  
-    La forma más sencilla es usar Docker Compose. Desde la carpeta `neo4j/` del repositorio, ejecuta:
-
-    ```bash
-    docker-compose up -d
-    ```
-
-    Esto levantará un contenedor Neo4j escuchando en `bolt://localhost:7687` con las credenciales predeterminadas (neo4j/password). Se aplicará automáticamente un script de inicialización (`init.cypher`) para crear los índices y *constraints* necesarios en la base de datos.
-
-5. **Configura las variables de entorno:**  
-    El proyecto utiliza un archivo `.env` para configurar la conexión a Neo4j y los modelos de Ollama. Asegúrate de que el archivo `.env` existe (debería venir incluido) y revisa que los datos sean correctos (URI de Neo4j, usuario, contraseña, nombres de modelos de Ollama). Si necesitas cambios (por ejemplo, usar una contraseña distinta o modelos diferentes), edita este archivo en consecuencia.
-
-6. **Construye el índice vectorial:**  
-    Una vez Neo4j esté en ejecución y configurado, puedes poblar la base de datos con los *embeddings* del dataset. Ejecuta el script:
+- **Carga de los URLs en el dataset:**  
+    Se puede añadir los URLs de las imagenes y generar URLs de **Wikiart** que redirigen a la página del artista:
 
     ```bash
-    python -m src.build_index
+    python src/load_url.py
     ```
 
-    Este script leerá el fichero CSV (`data/processed/wikiart_clean.csv`) y creará documentos con sus descripciones. Luego generará *embeddings* para cada documento usando el modelo de *embeddings* de Ollama y los almacenará en Neo4j como vectores. Por defecto, se toma una muestra aleatoria de 2000 obras para indexar, con el fin de agilizar el proceso. Verás mensajes en la consola indicando el progreso.
+    Este paso puede tardar aproximadamente 20-30 minutos en buscar y generar todos los enlaces necesarios. En caso de tener un `wikiart_metadata.csv` generado previamente, simplemente colócalo en `data/processed/` dentro del proyecto.
 
-7. **Ejecuta la aplicación web:**  
-    Finalmente, inicia la interfaz de usuario basada en Streamlit con:
+- **Generar contraseña hash:**
+    No es tan opcional ya que la aplicación requiere la contraseña hasheada pero en nuestro caso tenemos un archivo con la función que nos genera el hash a partir de la contraseña introducida:
 
     ```bash
-    python -m streamlit run src/chatbot.py
+    python src/create_hash.py
     ```
 
-    Esto abrirá (o podrás abrir manualmente) un navegador web apuntando a `http://localhost:8501`. Allí encontrarás una interfaz sencilla donde puedes introducir texto para obtener recomendaciones.
-
-<p align="right">(<a href="#readme-top">volver arriba</a>)</p>
+    El hash generado hace falta meterlo dentro de .env .
 
 ## Uso
 
 Una vez que la aplicación Streamlit esté en funcionamiento, podrás utilizar **Artist Recomender** de la siguiente manera:
 
-1. En la página principal, verás un campo de texto con la indicación: *"Describe qué estilo de dibujo o pintura te interesa:"*. Aquí puedes escribir una breve descripción de tus gustos artísticos. Por ejemplo: *"Me gusta el impresionismo con paisajes"* o *"Obras similares a las de Van Gogh"*.
-2. Pulsa el botón **"Recomendar"**. La aplicación consultará el índice vectorial para recuperar obras relacionadas con tu descripción y, con ayuda del modelo de lenguaje, generará una respuesta.
+1. En la página principal, verás un campo de texto con la indicación: *"Describe qué estilo de dibujo o pintura te interesa"*. Aquí puedes escribir una breve descripción de tus gustos artísticos. Por ejemplo: *"Me gusta el impresionismo con paisajes"* o *"Obras similares a las de Van Gogh"*.
+2. Pulsa el botón **"Recomendar"**. La aplicación consultará el índice vectorial en Neo4j para recuperar obras relacionadas con tu descripción y, con ayuda del modelo de lenguaje en Groq, generará una respuesta.
 3. Como resultado, verás una recomendación con una lista de uno o varios artistas o corrientes artísticas que encajan con tu entrada, acompañada de una breve explicación en español de por qué se sugiere cada uno.
-
-Por ejemplo, ante una consulta sobre *"impresionismo"*, el sistema podría responder con algo como:
-
-*"Te recomiendo explorar a Claude Monet, ya que fue un pintor destacado del Impresionismo que compartía tus intereses por los paisajes y el uso de la luz. También podrías ver obras de Camille Pissarro, otro impresionista cuyos cuadros presentan características similares."*
 
 Cada respuesta variará según el texto proporcionado, ya que la IA formulará recomendaciones basadas en las obras más cercanas a tu descripción dentro del conjunto de datos.
 
-Si encuentras un error o la respuesta tarda demasiado, revisa la consola donde lanzaste Streamlit para detectar posibles excepciones (por ejemplo, problemas de conexión con Neo4j u Ollama). Asegúrate de que tanto Neo4j como Ollama estén en ejecución y con los modelos cargados.
+Si encuentras un error o la respuesta tarda demasiado, revisa la consola donde lanzaste la aplicación (o los logs del contenedor) para detectar posibles excepciones (por ejemplo, problemas de conexión con Neo4j o con la API de Groq).
 
 > **Sugerencia:** Puedes modificar la cantidad de resultados similares (`similarity_top_k`) en el código si deseas que el motor considere más o menos obras al elaborar la recomendación (por defecto son 8). También es posible ajustar o traducir el mensaje *prompt* en `src/query_engine.py` si quisieras obtener respuestas en otro idioma o con otro estilo.
-
-<p align="right">(<a href="#readme-top">volver arriba</a>)</p>
-
-## Hoja de ruta
-
-- Implementación básica del motor de recomendaciones (índice vectorial con Neo4j y consultas).
-- Interfaz web simple con Streamlit para ingresar consultas y mostrar resultados.
-- Indexar la totalidad del dataset WikiArt (actualmente se usa una muestra de 2000 registros por cuestiones de rendimiento).
-- Permitir búsqueda inversa (por nombre de artista específico para recomendar estilos relacionados, si no se logra ya con la descripción libre).
-- Soporte para consultas multilingües (por ejemplo, entender entradas en inglés y responder acorde, además del español).
-- Optimizar el rendimiento y uso de memoria (ej. eliminar necesidad de caché masivo al generar el CSV, cargar *embeddings* de forma más eficiente, etc.).
 
 Mira los [issues abiertos](https://github.com/maximberchun/ArtistRecomender/issues) para ver la lista completa de funciones propuestas y problemas conocidos pendientes.
 
@@ -198,57 +226,59 @@ Mira los [issues abiertos](https://github.com/maximberchun/ArtistRecomender/issu
 
 ¡Las contribuciones son lo que hace que la comunidad de código abierto sea un lugar increíble para aprender, inspirarse y crear! Cualquier aportación que quieras hacer será muy apreciada.
 
-Si tienes alguna idea o sugerencia para mejorar el proyecto, por favor realiza un *fork* del repositorio y crea una rama para tu funcionalidad (`git checkout -b feature/NuevaFuncionalidad`). Luego realiza tus *commits* en esa rama (`git commit -m 'Agrega nueva funcionalidad'`) y envía tus cambios (`git push origin feature/NuevaFuncionalidad`). Finalmente, abre un **Pull Request** para que revisemos tu aporte.
+Si tienes alguna idea o sugerencia para mejorar el proyecto, por favor realiza un *fork* del repositorio y crea una rama para tu funcionalidad:
 
-También puedes simplemente abrir un *issue* con la etiqueta "enhancement" (mejora) para describir tu propuesta. ¡No olvides darle una estrella al proyecto si te gusta! ¡Gracias por tu apoyo!
+```bash
+git checkout -b feature/NuevaFuncionalidad
+```
 
-Pasos para contribuir al proyecto:
+Realiza los commits de tus cambios:
 
-1. Haz un **fork** del proyecto.
-2. Crea una rama para tu contribución:  
-   ```bash
-   git checkout -b feature/LoQueVasAAgregar
-
-    Realiza el commit de tus cambios:
-
-git commit -m "Agrega X cosa"
+```bash
+git commit -m "Agrega nueva funcionalidad"
+```
 
 Empuja la rama al repositorio remoto:
 
-    git push origin feature/LoQueVasAAgregar
+```bash
+git push origin feature/NuevaFuncionalidad
+```
 
-    Abre un Pull Request para que se revise tu cambio.
+Finalmente, abre un **Pull Request** para que se revise tu aporte.
 
-## Contribuidores principales:
+También puedes simplemente abrir un *issue* con la etiqueta `enhancement` (mejora) para describir tu propuesta. ¡No olvides darle una estrella al proyecto si te gusta! ¡Gracias por tu apoyo!
+
+### Contribuidores principales
+
 <a href="https://github.com/maximberchun/ArtistRecomender/graphs/contributors">
-<img src="https://contrib.rocks/image?repo=maximberchun/ArtistRecomender" alt="Contribuyentes del proyecto" />
-</a> <p align="right">(<a href="#readme-top">volver arriba</a>)</p>
+  <img src="https://contrib.rocks/image?repo=maximberchun/ArtistRecomender" alt="Contribuyentes del proyecto" />
+</a>
+
+<p align="right">(<a href="#readme-top">volver arriba</a>)</p>
 
 ## Licencia
 
-Este proyecto no cuenta con una licencia específica. El código fuente se proporciona con fines educativos y demostrativos. Todos los derechos reservados a menos que se especifique lo contrario en el futuro. <p align="right">(<a href="#readme-top">volver arriba</a>)</p>
+Este proyecto no cuenta con una licencia específica. El código fuente se proporciona con fines educativos y demostrativos. Todos los derechos reservados a menos que se especifique lo contrario en el futuro.
+
+<p align="right">(<a href="#readme-top">volver arriba</a>)</p>
 
 ## Contacto
 
-Maxim Berchun – @maximberchun – mberch00@estudiantes.unileon.es , maximberchun@hotmail.com
+Maxim Berchun – @maximberchun – mberch00@estudiantes.unileon.es · maximberchun@hotmail.com
 
-Enlace del proyecto: https://github.com/maximberchun/ArtistRecomender <p align="right">(<a href="#readme-top">volver arriba</a>)</p>
+Enlace del proyecto: https://github.com/maximberchun/ArtistRecomender
 
+<p align="right">(<a href="#readme-top">volver arriba</a>)</p>
 
-## Recursos y bibliotecas que han contribuido indirectamente a este proyecto:
+## Agradecimientos
 
-    Hugging Face – Dataset WikiArt – Por proveer una base de datos amplia de obras de arte con la que alimentar el sistema de recomendaciones.
+Recursos y bibliotecas que han contribuido indirectamente a este proyecto:
 
-    LlamaIndex (GPT Index) – Por facilitar la construcción de índices de información para LLMs, lo que permitió integrar Neo4j como almacenamiento vectorial.
-
-    Neo4j Community – Por la base de datos de grafos y su soporte para índices vectoriales, clave en la implementación eficiente de las búsquedas de similitud.
-
-    Ollama – Proyecto de código abierto que hace posible ejecutar modelos de lenguaje de forma sencilla.
-
-    Groq (GroqCloud) – Plataforma de inferencia de baja latencia con API compatible con OpenAI y Llama, utilizada como proveedor LLM para generar respuestas de manera rápida y fiable.
-
-    Mixedbread AI – Creadores del modelo de embeddings mxbai-embed-large, utilizado para representar las descripciones de las obras de arte en este proyecto.
-
-    Streamlit Docs – Documentación oficial de Streamlit, que ayudó a construir rápidamente la interfaz web interactiva.
+- **Hugging Face** – Dataset WikiArt, por proveer una base de datos amplia de obras de arte con la que alimentar el sistema de recomendaciones.
+- **LlamaIndex (GPT Index)** – Por facilitar la construcción de índices de información para LLMs, permitiendo integrar Neo4j como almacenamiento vectorial.
+- **Neo4j Community** – Por la base de datos de grafos y su soporte para índices vectoriales, clave en la implementación eficiente de las búsquedas de similitud.
+- **Groq (GroqCloud)** – Plataforma de inferencia de baja latencia con API compatible con OpenAI y Llama, utilizada como proveedor LLM para generar respuestas de manera rápida y fiable.
+- **Mixedbread AI** – Por los modelos de *embeddings* que han servido de referencia en las primeras fases del proyecto.
+- **Streamlit Docs** – Documentación oficial de Streamlit, que ayudó a construir rápidamente la interfaz web interactiva.
 
 <p align="right">(<a href="#readme-top">volver arriba</a>)</p>
