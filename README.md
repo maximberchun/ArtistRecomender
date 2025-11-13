@@ -277,4 +277,11 @@ Recursos y bibliotecas que han contribuido indirectamente a este proyecto:
 
 <p align="right">(<a href="#readme-top">volver arriba</a>)</p>
 
+## Copyright
+
+Todas las licencias de este repositorio están protegidas por derechos de autor de sus respectivos autores.
+Todo lo demás se publica bajo CC0. Consulta el archivo `LICENSE` para más detalles.
+
+<p align="right">(<a href="#readme-top">volver arriba</a>)</p>
+
 > © 2025, Maxim Berchun – Universidad de León  
