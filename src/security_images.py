@@ -32,16 +32,14 @@ def safe_fetch_image_bytes(url: str) -> bytes | None:
     if u.scheme not in ("http", "https"):
         return None
     host = (u.hostname or "").lower()
-
+    """
     # A) Allowlist estricta (recomendada)
     if ALLOWED_HOSTS and host not in ALLOWED_HOSTS:
-        return None
-    else: 
         return None
     # B) Bloquea IPs privadas/loopback
     if _is_private_ip(host):
         return None
-
+    """
     s = requests.Session()
     s.max_redirects = MAX_REDIRECTS
     headers = {
