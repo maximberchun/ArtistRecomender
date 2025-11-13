@@ -256,12 +256,6 @@ También puedes simplemente abrir un *issue* con la etiqueta `enhancement` (mejo
 
 <p align="right">(<a href="#readme-top">volver arriba</a>)</p>
 
-## Licencia
-
-Este proyecto no cuenta con una licencia específica. El código fuente se proporciona con fines educativos y demostrativos. Todos los derechos reservados a menos que se especifique lo contrario en el futuro.
-
-<p align="right">(<a href="#readme-top">volver arriba</a>)</p>
-
 ## Contacto
 
 Maxim Berchun – @maximberchun – mberch00@estudiantes.unileon.es · maximberchun@hotmail.com
