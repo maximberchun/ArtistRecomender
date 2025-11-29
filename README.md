@@ -269,7 +269,7 @@ Enlace del proyecto: https://github.com/maximberchun/ArtistRecomender
 Recursos y bibliotecas que han contribuido indirectamente a este proyecto:
 
 - **Hugging Face** – Dataset WikiArt, por proveer una base de datos amplia de obras de arte con la que alimentar el sistema de recomendaciones.
-- **LlamaIndex (GPT Index)** – Por facilitar la construcción de índices de información para LLMs, permitiendo integrar Neo4j como almacenamiento vectorial.
+- **LlamaIndex (Hugging Face Index)** – Por facilitar la construcción de índices de información para LLMs, permitiendo integrar Neo4j como almacenamiento vectorial.
 - **Neo4j Community** – Por la base de datos de grafos y su soporte para índices vectoriales, clave en la implementación eficiente de las búsquedas de similitud.
 - **Groq (GroqCloud)** – Plataforma de inferencia de baja latencia con API compatible con OpenAI y Llama, utilizada como proveedor LLM para generar respuestas de manera rápida y fiable.
 - **Mixedbread AI** – Por los modelos de *embeddings* que han servido de referencia en las primeras fases del proyecto.
