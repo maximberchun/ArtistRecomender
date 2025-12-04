@@ -222,6 +222,37 @@ Mira los [issues abiertos](https://github.com/maximberchun/ArtistRecomender/issu
 
 <p align="right">(<a href="#readme-top">volver arriba</a>)</p>
 
+## Análisis DAFO
+
+A continuación se presenta un análisis de las Debilidades, Amenazas, Fortalezas y Oportunidades del proyecto evaluando tanto factores internos como externos.
+
+### Fortalezas (Strengths)
+
+1. Tecnología Híbrida Avanzada: La integración de un LLM potente con una base de datos de grafos vectoriales de Neo4j permite búsquedas semánticas profundas y precisas.
+2. Alta Velocidad de Inferencia: El uso de GroqCloud garantiza respuestas rápidas y baja latencia mejorando la experiencia de usuario.
+3. Despliegue Sencillo: La configuración contenerizada mediante Docker Compose facilita la instalación y puesta en marcha del entorno completo.
+4. Capacidad Multilingüe: Gracias al modelo de embeddings multilingual-e5-small el sistema puede interpretar consultas y descripciones en diversos idiomas.
+
+### Oportunidades (Opportunities)
+
+1. Ampliación del Dataset: Posibilidad de enriquecer el sistema integrando nuevas fuentes de datos artísticos y museísticos más allá de WikiArt.
+2. Evolución Comunitaria: Al ser un proyecto de código abierto existe el potencial de crecimiento mediante contribuciones de la comunidad para nuevas funcionalidades.
+3. Herramienta Educativa: Potencial para ser utilizado como recurso didáctico interactivo en entornos de enseñanza de historia del arte.
+
+### Debilidades (Weaknesses)
+
+1. Dependencia de APIs Externas: El funcionamiento depende de claves API de terceros (GroqCloud) y la disponibilidad de modelos en Hugging Face.
+2. Requisitos de Recursos: La indexación inicial y el manejo del dataset completo pueden demandar un espacio en disco y memoria considerables.
+3. Curva de Entrada Técnica: Para el despliegue local se requieren conocimientos previos en herramientas como Docker y Python.
+
+### Amenazas (Threats)
+
+1. Cambios en Servicios de Terceros: Posibles modificaciones en los límites de uso gratuitos (rate limits) o estructuras de precios de la API de Groq.
+2. Evolución de Dependencias: La rápida actualización de librerías de IA (como LlamaIndex) podría generar incompatibilidades en el futuro si no se mantiene el código.
+3. Calidad de los Metadatos: La precisión de las recomendaciones está ligada a la calidad y veracidad de los metadatos presentes en el dataset original de WikiArt.
+
+<p align="right">(<a href="#readme-top">volver arriba</a>)</p>
+
 ## Contribuir
 
 ¡Las contribuciones son lo que hace que la comunidad de código abierto sea un lugar increíble para aprender, inspirarse y crear! Cualquier aportación que quieras hacer será muy apreciada.
